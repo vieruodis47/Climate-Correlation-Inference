@@ -1,0 +1,263 @@
+---
+title: "CO2 vs. Global Temperature Anomalies"
+author: "Michelle, Maria, Nusaybah, Jigme"
+date: "2024-12-11"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+
+library(readr)
+CO2 <- read_csv("~/Desktop/STAT240/data/CO2.csv")
+
+library(readr)
+Global_temp <- read_csv("~/Desktop/STAT240/data/Global temp.csv")
+```
+
+## Introduction
+
+As global warming continues to intensify, one of the most urgent
+concerns is the role of carbon dioxide (CO2) in driving rising global
+temperatures. Human activities, particularly the burning of fossil fuels
+and widespread deforestation, have led to a significant increase in
+carbon dioxide levels in today’s atmosphere. Carbon dioxide is known as
+a greenhouse gas which traps heat from the sun and therefore causes
+temperatures to rise significantly. This can lead to long-term issues such as extreme weather conditions and rising sea levels. For example, the eighty-degree weather in Wisconsin during early October—an event as atypical for the Midwest. Cases like that emphasizes the growing need for urgent action to address climate change. Therefore, the question this report seeks to further investigate is: Have increasing carbon dioxide levels from 1980 to 2023 contributed to a rise in global temperatures? Is there a measurable linear relationship between the two?
+
+Through careful statistical analysis, this report examines the
+correlation between rising carbon dioxide levels and global temperature anomalies
+from 1980 to 2023 using 1959-1980 as a baseline. Our findings provide
+compelling evidence of a positive linear relationship in the past between increasing global temperatures and rising carbon dioxide levels.
+
+```{r echo = FALSE}
+CO2_cleaned = CO2 %>% select(-Uncertainty) %>% filter(Year>=1980) %>% arrange(Year) %>% rename('Average CO2 concentration' = Mean)
+```
+
+```{r echo = FALSE}
+Global_temp_cleaned = Global_temp %>% filter(Source == 'GISTEMP') %>% select(Year,Mean) %>% filter(Year>=1980 & Year<=2023) %>% arrange(Year) %>% rename('Average Global Temperature Anomalies' = Mean) %>% select(-Year)
+```
+
+## Background
+
+Our study uses reliable datasets from NASA and NOAA (National Oceanic and Atmospheric Administration). These records are crucial for understanding how greenhouse gas emissions affect climate change.
+
+The Global Temperature Anomalies dataset, derived from NASA’s GISTEMP
+v4, measures annual deviations from the 1951–1980 baseline temperature
+average. Observations are collected from NOAA’s Global Historical
+Climatology Network (GHCN v4) for land stations and the Extended
+Reconstructed Sea Surface Temperature (ERSST v5) dataset for oceans.
+Adjustments account for non-climatic biases such as urban heat island
+effects, station relocations, and changes in observation methods.
+
+The Atmospheric CO₂ Concentrations dataset is sourced from NOAA’s GML.
+It reports global annual mean CO₂ concentrations in parts per million
+(ppm), derived from marine surface sampling sites distributed worldwide.
+These sites are strategically located to represent well-mixed
+atmospheric conditions. Data are reported as dry air mole fractions,
+excluding water vapor, and are smoothed to remove seasonal variations.
+NOAA calculates global averages by combining smoothed measurements from
+individual sites, weighted by latitude.
+
+Each row in the combined dataset represents a single year and includes
+two variables: the global mean CO₂ concentration (ppm) and the global
+temperature anomaly (°C).
+
+**These paired variables according to year provide the foundation for addressing the research question: “Is there a linear relationship between average atmospheric CO₂ concentrations and global temperature anomalies between 1980 and 2023?”**
+
+Temperature anomalies offer a standardized metric for
+evaluating climate change by capturing deviations from historical norms.
+However, there are some unusual factors to consider:Short-term variations may arise from natural phenomena such as volcanic eruptions and El Niño/La Niña events, which can create cooling or warming outliers. Moreover, adjustments in data collection methods between 1980-2023, could influence the observed relationship.
+
+To visualize this relationship, a scatter plot is constructed with CO₂
+concentrations on the x-axis and temperature anomalies on the y-axis. A
+linear regression line is added to highlight trends. Preliminary
+analysis suggests a strong positive correlation, supporting the
+hypothesis that rising CO₂ levels are closely linked to increasing
+global temperatures. We aim to determine whether a statistically
+significant linear relationship exists between atmospheric CO₂
+concentrations and global temperature anomalies using linear regression
+analysis and analysis of numerical summaries like the slope of the
+regression line and correlation coefficient.
+
+```{r include=FALSE}
+Co2_temp = cbind(CO2_cleaned,Global_temp_cleaned)
+```
+
+```{r echo=FALSE, message = FALSE}
+ggplot(Co2_temp, aes(x=`Average CO2 concentration`,y=`Average Global Temperature Anomalies`)) + geom_point() + geom_smooth(method = 'lm', se = FALSE) + labs(title = "Average Global Temperature Anomalies Vs. Average CO2 Concentration", subtitle = 'average Global Temperature Anomalies with respect to based period 1951-1980', x = 'Average CO2 concentration in ppm', y = 'Average Global Temperature Anomalies in celsius')
+```
+
+```{r include=FALSE}
+# Calculating Beta_hat_1 using linear model
+model = lm(`Average Global Temperature Anomalies` ~ `Average CO2 concentration`, data = Co2_temp)
+model
+```
+
+```{r include=FALSE}
+# Calculating beta_hat_1 manually
+x = Co2_temp$`Average CO2 concentration`
+y = Co2_temp$`Average Global Temperature Anomalies`
+
+r = cor(x, y)
+
+beta_hat_1 = r * sd(y) / sd(x)
+beta_hat_0 = mean(y) - beta_hat_1 * mean(x)
+
+beta_hat_1
+beta_hat_0
+```
+
+```{r include=FALSE}
+resid(model)
+resid_df = Co2_temp %>% mutate(residuals = resid(model), predictions = predict(model)) %>% select(`Average CO2 concentration`, `Average Global Temperature Anomalies`, predictions, residuals)
+resid_df
+```
+
+## Statistical Analysis
+
+This is the linear regression model we use in the study: 𝑌𝑖=𝛽0+𝛽1∗𝑋+𝜀𝑖,
+for 𝑖=1,...𝑛 The parameter of interest in our study is the true Beta-1
+(𝛽1) for the population, which represents the slope coefficient between
+X (CO2 concentration) and Y (global temperature anomalies). It
+explains how average annual global temperature anomalies changes over
+years in correspondence to the change in atmospheric CO2 concentration.
+Beta-1 is calculated by r\*sd(y)/sd(x). We use the linear regression
+model to determine if there’s a linear relationship existing between CO2
+concentration and average global temperature in a year.
+
+We assume that: Every x-value has a y-value in correspondence. Both the
+x and y vectors have the same length n, which in our study means that
+they cover up the same length of years. And in the i-th point, we have
+(Xi, Yi) connected.
+
+Constant Variance: At each point X, the values Y are generated from a
+normal distribution centered around the height of the true regression
+line at that X value. There are random variations around the line
+following a normal distribution pattern. The standard deviation of the
+normal distribution around the true line does not change as you move up
+and down the X line. Thus, the constant standard deviations of error is
+independent of X.
+
+To check, we look at the residual plot for linearity, normal errors
+around 0, and constant variances.
+
+```{r echo=FALSE, message =FALSE}
+# This is the Residual Plot to check for linearity
+ggplot(resid_df, aes(x = `Average CO2 concentration`, y = residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0) + geom_smooth(se=FALSE)
+```
+
+Linearity is satisfied because there is not an obvious curved pattern.
+Normal errors around 0 is satisfied because points tend to cluster
+around the center evenly in both directions. Constant standard deviation
+and variance is also satisfied as points do not show obvious spreading
+out or funneling in from left to right. As a result we pass all the
+assumptions.
+
+Below is our hypothesis:
+
+H0: beta-1 = 0 (no linear relationship) Ha: beta-1 ≠ 0. (there
+is a linear relationship) Significance level: alpha = .05
+
+```{r include=FALSE}
+summary(model)
+```
+
+```{r include = FALSE}
+point_estimate = .0103727
+se = .0005681
+
+test_stat = (point_estimate - 0)/se
+
+test_stat
+```
+
+```{r include = FALSE}
+n = nrow(Co2_temp)
+
+p_value = 2*(1-pt(test_stat, df = n-2))
+p_value
+```
+
+With a p-value of 0 which is less than significance level of .05, we
+have enough evidence to reject the null hypothesis that there's no
+linear relationship between annual CO2 concentration and average global
+temperature anomalies. We instead have a very strong positive linear
+relationship.
+
+```{r include=FALSE}
+C = 0.95 # 95% confidence interval
+n = nrow(Co2_temp)
+
+r = cor(x, y)
+r
+
+beta_hat_1 = r * sd(y) / sd(x) 
+
+moe = qt(C + (1-C)/2, df = n - 2)*se
+
+left = beta_hat_1 - moe
+right = beta_hat_1 + moe
+
+c(left, right)
+```
+We have a correlation coefficient of .94 which indicates
+a strong positive linear relationship. And we're 95% confident that the
+true slope is captured between .00923 and .0115, exlcuding 0 and
+therefore strongly supports the idea that higher CO₂ levels correspond
+to higher global temperatures at a measurable rate. For each increase in
+CO2 ppm per year, the annual average global temperature anomaly
+increases by .00923 degree celsius to .0115 degree celsius.
+
+## Discussion
+
+Shortcomings of analysis: Our global temperature data are anomalies
+based on a historical period rather than real average annual global
+temperature. If we used real data, we may get a more accurate result. In
+addition, the 1951–1980 baseline used for temperature anomalies is
+standard but excludes pre-industrial temperature data. A longer
+historical baseline might offer additional context.
+
+There are some unusual factors to consider. Short-term variations may
+arise from natural phenomena such as volcanic eruptions and El Niño/La
+Niña events, which can create cooling or warming outliers. Moreover,
+adjustments in data collection methods between 1980-2023, could
+influence the observed relationship.
+
+While residuals appeared approximately normal and variance seemed
+constant, the analysis did not test for potential violations like
+autocorrelation or the presence of non-linear trends. Looking at our
+residual plot, there is still a subtle curved pattern though we don't
+consider it as a violation of linearity.
+
+Recommendations for future research: We are interested investigating
+potential non-linear relationships using other modeling techniques, such
+as curved patterns or Meanwhile, zooming in the problem is also a good
+idea. We can conduct regional studies which analyze regional variations
+to understand localized climate impacts, giving us a more detailed view
+of how local CO2 emissions affect the local temperature. Our project is
+highly connected to climate change, which is an important issue
+nowadays. Therefore, we can extend the analysis to predict future trends
+and assess the potential long-term impact of continued CO₂ increases.
+Extrapolation may be helpful.
+
+## Citations
+
+GISTEMP Team, 2024: GISS Surface Temperature Analysis (GISTEMP), version
+4. NASA Goddard Institute for Space Studies. Dataset accessed 2024-12-04
+at <https://data.giss.nasa.gov/gistemp/>.
+
+Lenssen, N., G.A. Schmidt, M. Hendrickson, P. Jacobs, M. Menne, and R.
+Ruedy, 2024: A GISTEMPv4 observational uncertainty ensemble. Journal of
+Geophysical Research: Atmospheres, 129(17), e2023JD040179,
+<doi:10.1029/2023JD040179>.
+
+Lan, X., Tans, P., and K.W. Thoning, 2024: Trends in globally-averaged
+CO₂ determined from NOAA Global Monitoring Laboratory measurements.
+Version 2024-11, <doi:10.15138/9N0H-ZH07>.
